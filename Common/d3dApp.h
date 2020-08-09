@@ -88,27 +88,34 @@ protected:
     bool      m4xMsaaState = false;    // 4X MSAA enabled
     UINT      m4xMsaaQuality = 0;      // quality level of 4X MSAA
 
-	// Used to keep track of the 밺elta-time?and game time (?.4).
+	// Used to keep track of the delta-time?and game time (?.4).
 	GameTimer mTimer;
 	
     Microsoft::WRL::ComPtr<IDXGIFactory4> mdxgiFactory;
-    Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
-    Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice;
+    Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;//교환사슬 
+    Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice;//DX와 하드웨어간의 인터페이스 역할
 
-    Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
-    UINT64 mCurrentFence = 0;
-	
+    Microsoft::WRL::ComPtr<ID3D12Fence> mFence;//펜스
+    UINT64 mCurrentFence = 0;//현재 펜스
+	 
+	//명령 대기열 대표 인터페이스 ID3D12CommandQueue 변수 선언
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
+	//명령 리스트 할당자 대표 인터페이스 ID3D12CommandAllocator 변수 선언
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mDirectCmdListAlloc;
-    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> mCommandList;
+	//명령 리스트 대표 인터페이스 ID3D12GraphicsCommandList 변수 선언
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> mCommandList;
 
-	static const int SwapChainBufferCount = 2;
-	int mCurrBackBuffer = 0;
+	static const int SwapChainBufferCount = 2;//버퍼 개수
+	int mCurrBackBuffer = 0;//현재 버퍼
+
     Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[SwapChainBufferCount];
-    Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
+    Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;//깊이 스텐실 버퍼
 
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
+	//서술자 힙
+	// 렌더 대상 뷰 (RTV) - 교환 사슬에서 렌더링의 대상이 되는 버퍼 자원을 서술
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap; 
+	// 깊이 스텐실 뷰(DSV) - 깊이 스텐실 뷰는 깊이 판정을 위한 버퍼 자원을 서술
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap; 
 
     D3D12_VIEWPORT mScreenViewport; 
     D3D12_RECT mScissorRect;
