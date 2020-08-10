@@ -268,7 +268,7 @@ void D3DApp::OnResize()
 
 	//mCommandList->RSSetViewports(1, &mScreenViewport);
 
-    mScissorRect = { 0, 0, mClientWidth, mClientHeight };
+    mScissorRect = { mClientWidth / 4, mClientHeight / 4, mClientWidth / 2 + mClientWidth / 4, mClientHeight / 2 + mClientHeight / 4 };
 	//mCommandList->RSSetScissorRects(1, &mScissorRect);
 }
  
@@ -678,7 +678,6 @@ void D3DApp::CalculateFrameStats()
     
 	static int frameCnt = 0;
 	static float timeElapsed = 0.0f;
-	
 	frameCnt++;
 
 	// 1초동안 평균 프레임 수 계산
@@ -689,10 +688,12 @@ void D3DApp::CalculateFrameStats()
 
         wstring fpsStr = to_wstring(fps);
         wstring mspfStr = to_wstring(mspf);
+		wstring timeStr = to_wstring(mTimer.TotalTime());
 
         wstring windowText = mMainWndCaption +
             L"    fps: " + fpsStr +
-            L"   mspf: " + mspfStr;
+            L"   mspf: " + mspfStr +
+			L"   time: " + timeStr;
 
         SetWindowText(mhMainWnd, windowText.c_str());
 		

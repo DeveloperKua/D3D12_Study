@@ -499,9 +499,10 @@ void BoxApp::BuildPSO()
 		reinterpret_cast<BYTE*>(mpsByteCode->GetBufferPointer()),
 		mpsByteCode->GetBufferSize()
 	};
+
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	//와이어 프레임 모드- 별도 지정 없을 시 기본 값은 solid
-	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	//psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	//삼각형 선별 방식 각각 선별 X, 전면 선별 , 별도 지정 없을 시 후면 선별
 	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	//psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
