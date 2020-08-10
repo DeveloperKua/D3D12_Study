@@ -1,4 +1,4 @@
-//***************************************************************************************
+ï»¿//***************************************************************************************
 // BoxApp.cpp by Frank Luna (C) 2015 All Rights Reserved.
 //
 // Shows how to draw a box in Direct3D 12.
@@ -27,6 +27,7 @@ struct ObjectConstants
 {
 	XMFLOAT4X4 WorldViewProj = MathHelper::Identity4x4();
 	float Time = 0.0f;
+	XMFLOAT4 pColor;
 };
 
 class BoxApp : public D3DApp
@@ -80,6 +81,9 @@ private:
 	float mRadius = 5.0f;
 
 	POINT mLastMousePos;
+
+	float mPosChangeValue = 0.0f;
+	bool mIsGoAhead = true;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -163,19 +167,44 @@ void BoxApp::Update(const GameTimer& gt)
 
 	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
 	XMStoreFloat4x4(&mView, view);
-	XMMATRIX translate = XMMatrixSet(1, 0, 0, 0,
-									 0, 1, 0, 0,
-									 0, 0, 1, 0,
-									 1, 0, 0, 1);
-	XMMATRIX world = XMLoadFloat4x4(&mWorld);
+
+	if (mIsGoAhead)
+	{
+		//mPosChangeValue += 1 * gt.DeltaTime();
+
+		if (mPosChangeValue > 1.5)
+		{
+			mIsGoAhead = false;
+		}
+	}
+	else
+	{
+		//mPosChangeValue -= 1 * gt.DeltaTime();
+
+		if (mPosChangeValue < -1.5)
+		{
+			mIsGoAhead = true;
+		}
+	}
+
+	XMFLOAT4X4 tempWorld = MathHelper::Identity4x4();
+	tempWorld._41 = mPosChangeValue;
+
+	XMMATRIX world = XMLoadFloat4x4(&tempWorld);
 	XMMATRIX proj = XMLoadFloat4x4(&mProj);
 	XMMATRIX worldViewProj = world * view * proj;
-	//worldViewProj *= translate;
 
 	// Update the constant buffer with the latest worldViewProj matrix.
 	ObjectConstants objConstants;
 	XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
 	objConstants.Time = gt.TotalTime();
+	objConstants.pColor = XMFLOAT4(Colors::Aquamarine);
+
+	tempWorld._41 = -mPosChangeValue;
+	world = XMLoadFloat4x4(&tempWorld);
+	worldViewProj = world * view*proj;
+	XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
+
 	mObjectCB->CopyData(0, objConstants);
 }
 
@@ -197,7 +226,7 @@ void BoxApp::Draw(const GameTimer& gt)
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// Clear the back buffer and depth buffer.
-	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::Black, 0, nullptr);
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Specify the buffers we are going to render to.
@@ -211,31 +240,39 @@ void BoxApp::Draw(const GameTimer& gt)
 	mCommandList->IASetVertexBuffers(0, 1, &mBox_PyramidGeo->VertexBufferView());
 	mCommandList->IASetIndexBuffer(&mBox_PyramidGeo->IndexBufferView());
 
-	//±âº» µµÇü À§»ó ±¸Á¶
-	//Á¡¸ñ·Ï
+	//ê¸°ë³¸ ë„í˜• ìœ„ìƒ êµ¬ì¡°
+	//ì ëª©ë¡
 	//mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-	//¼± ¶ì
+	//ì„  ë 
 	//mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
-	//¼±¸ñ·Ï
+	//ì„ ëª©ë¡
 	//mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-	//»ï°¢Çü ¶ì
+	//ì‚¼ê°í˜• ë 
 	//mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	//»ï°¢Çü ¸ñ·Ï
+	//ì‚¼ê°í˜• ëª©ë¡
 	mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+	CD3DX12_GPU_DESCRIPTOR_HANDLE cbv1(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+	cbv1.Offset(0, mCbvSrvUavDescriptorSize);
+
+	mCommandList->SetGraphicsRootDescriptorTable(0, cbv1);
 
 	mCommandList->DrawIndexedInstanced(
 		mBox_PyramidGeo->DrawArgs["box"].IndexCount,
-		1, mBox_PyramidGeo->DrawArgs["box"].StartIndexLocation, 0, 0);
+		1, mBox_PyramidGeo->DrawArgs["box"].StartIndexLocation, mBox_PyramidGeo->DrawArgs["box"].BaseVertexLocation, 0);
+
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE cbv2(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+	cbv2.Offset(1, mCbvSrvUavDescriptorSize);
+
+	mCommandList->SetGraphicsRootDescriptorTable(0, cbv2);
 
 	mCommandList->DrawIndexedInstanced(
 		mBox_PyramidGeo->DrawArgs["pyr"].IndexCount,
-		1, mBox_PyramidGeo->DrawArgs["pyr"].StartIndexLocation, 0, 0);
+		1, mBox_PyramidGeo->DrawArgs["pyr"].StartIndexLocation, mBox_PyramidGeo->DrawArgs["pyr"].BaseVertexLocation, 0);
 
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 	// Done recording commands.
@@ -303,7 +340,7 @@ void BoxApp::OnMouseMove(WPARAM btnState, int x, int y)
 void BoxApp::BuildDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = 1;
+	cbvHeapDesc.NumDescriptors = 2;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;
@@ -386,7 +423,7 @@ void BoxApp::BuildShadersAndInputLayout()
 
 void BoxApp::BuildBoxGeometry()
 {
-	std::array<Vertex, 9> PosVertices =
+	std::array<Vertex, 13> PosVertices =
 	{
 		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),
 		Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black) }),
@@ -396,7 +433,12 @@ void BoxApp::BuildBoxGeometry()
 		Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow) }),
 		Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan) }),
 		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta) }),
-		Vertex({ XMFLOAT3(0.0f, 1.5f, 0.0f), XMFLOAT4(Colors::Aquamarine) })
+		
+		Vertex({ XMFLOAT3(0.0f, 1.5f, 0.0f), XMFLOAT4(Colors::Aquamarine) }),
+		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),		
+		Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::RosyBrown) }),		
+		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::ForestGreen) }),		
+		Vertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Black) })
 	};
 
 	std::array<std::uint16_t, 54> indices =
@@ -429,20 +471,20 @@ void BoxApp::BuildBoxGeometry()
 
 		//pyramid
 		//front face
-		0, 8, 3,
+		0, 2, 1,
 
 		//back face
-		4, 7, 8,
+		0, 3, 2,
 
 		//left face
-		4, 8, 0,
+		0, 4, 3,
 
 		//right face
-		3, 8, 7,
+		0, 1, 4,
 
 		//bottom face
-		4, 0, 3,
-		4, 3, 7
+		1, 3, 2,
+		1, 4, 3
 	};
 
 	const UINT posvbByteSize = (UINT)PosVertices.size() * sizeof(Vertex);
@@ -469,16 +511,16 @@ void BoxApp::BuildBoxGeometry()
 	mBox_PyramidGeo->IndexBufferByteSize = ibByteSize;
 
 	SubmeshGeometry submesh0;
-	submesh0.IndexCount = (UINT)36;
+	submesh0.IndexCount = 36;
 	submesh0.StartIndexLocation = 0;
 	submesh0.BaseVertexLocation = 0;
 
 	mBox_PyramidGeo->DrawArgs["box"] = submesh0;
 
 	SubmeshGeometry submesh1;
-	submesh1.IndexCount = (UINT)18;
+	submesh1.IndexCount = 18;
 	submesh1.StartIndexLocation = 36;
-	submesh1.BaseVertexLocation = 0;
+	submesh1.BaseVertexLocation = 8;
 
 	mBox_PyramidGeo->DrawArgs["pyr"] = submesh1;
 }
@@ -501,9 +543,9 @@ void BoxApp::BuildPSO()
 	};
 
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	//¿ÍÀÌ¾î ÇÁ·¹ÀÓ ¸ğµå- º°µµ ÁöÁ¤ ¾øÀ» ½Ã ±âº» °ªÀº solid
+	//ì™€ì´ì–´ í”„ë ˆì„ ëª¨ë“œ- ë³„ë„ ì§€ì • ì—†ì„ ì‹œ ê¸°ë³¸ ê°’ì€ solid
 	//psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	//»ï°¢Çü ¼±º° ¹æ½Ä °¢°¢ ¼±º° X, Àü¸é ¼±º° , º°µµ ÁöÁ¤ ¾øÀ» ½Ã ÈÄ¸é ¼±º°
+	//ì‚¼ê°í˜• ì„ ë³„ ë°©ì‹ ê°ê° ì„ ë³„ X, ì „ë©´ ì„ ë³„ , ë³„ë„ ì§€ì • ì—†ì„ ì‹œ í›„ë©´ ì„ ë³„
 	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	//psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
 

@@ -268,7 +268,8 @@ void D3DApp::OnResize()
 
 	//mCommandList->RSSetViewports(1, &mScreenViewport);
 
-    mScissorRect = { mClientWidth / 4, mClientHeight / 4, mClientWidth / 2 + mClientWidth / 4, mClientHeight / 2 + mClientHeight / 4 };
+    //mScissorRect = { mClientWidth / 4, mClientHeight / 4, mClientWidth / 2 + mClientWidth / 4, mClientHeight / 2 + mClientHeight / 4 };
+    mScissorRect = { 0,0, mClientWidth, mClientHeight};
 	//mCommandList->RSSetScissorRects(1, &mScissorRect);
 }
  
@@ -688,12 +689,12 @@ void D3DApp::CalculateFrameStats()
 
         wstring fpsStr = to_wstring(fps);
         wstring mspfStr = to_wstring(mspf);
-		wstring timeStr = to_wstring(mTimer.TotalTime());
+		//wstring timeStr = to_wstring(mTimer.TotalTime());
 
-        wstring windowText = mMainWndCaption +
-            L"    fps: " + fpsStr +
-            L"   mspf: " + mspfStr +
-			L"   time: " + timeStr;
+		wstring windowText = mMainWndCaption +
+			L"    fps: " + fpsStr +
+			L"   mspf: " + mspfStr;
+			//L"   time: " + timeStr;
 
         SetWindowText(mhMainWnd, windowText.c_str());
 		

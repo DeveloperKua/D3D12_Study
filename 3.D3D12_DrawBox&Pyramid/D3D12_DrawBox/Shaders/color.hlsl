@@ -8,6 +8,7 @@ cbuffer cbPerObject : register(b0)
 {
 	float4x4 gWorldViewProj; 
 	float gTime;
+	float4 gPulseColor;
 };
 
 struct VertexIn
@@ -22,7 +23,7 @@ struct VertexOut
     float4 Color : COLOR;
 };
 
-VertexOut VS(VertexIn vin)
+VertexOut VS(VertexIn vin) 
 {
 	VertexOut vout;
 
@@ -40,11 +41,20 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	//float smoothColor = smoothstep(0, 6, gTime);
-    //return smoothColor * pin.Color;
+	//exam15
+	//clip(pin.Color.r - 0.5f);
 
-	clip(pin.Color.r - 0.5f);
-    return pin.Color;
+	//exam14
+	float4 finalColor = pin.Color;
+	finalColor.x = smoothstep(0, 1, sin(gTime));
+	
+	//exam16
+	const float pi = 3.1415926;
+
+	float s = 0.5 * sin(2 * gTime - 0.25f * pi) + 0.5f;
+	float4 c = lerp(pin.Color, gPulseColor, s);
+
+    return c;
 }
 
 
