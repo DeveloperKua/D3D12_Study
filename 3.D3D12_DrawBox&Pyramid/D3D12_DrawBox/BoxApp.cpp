@@ -193,7 +193,7 @@ void BoxApp::Update(const GameTimer& gt)
 	XMMATRIX world = XMLoadFloat4x4(&tempWorld);
 	XMMATRIX proj = XMLoadFloat4x4(&mProj);
 	XMMATRIX worldViewProj = world * view * proj;
-
+        
 	// Update the constant buffer with the latest worldViewProj matrix.
 	ObjectConstants objConstants;
 	XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
