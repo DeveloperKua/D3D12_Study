@@ -257,7 +257,7 @@ void D3DApp::OnResize()
 
 	// Wait until resize is complete.
 	FlushCommandQueue();
-
+	
 	// Update the viewport transform to cover the client area.
 	mScreenViewport.TopLeftX = 0;
 	mScreenViewport.TopLeftY = 0;
@@ -269,7 +269,8 @@ void D3DApp::OnResize()
 	//mCommandList->RSSetViewports(1, &mScreenViewport);
 
     //mScissorRect = { mClientWidth / 4, mClientHeight / 4, mClientWidth / 2 + mClientWidth / 4, mClientHeight / 2 + mClientHeight / 4 };
-    mScissorRect = { 0,0, mClientWidth, mClientHeight};
+	//mScissorRect = { 0, 0, mClientWidth / 2, mClientHeight / 2 };
+	mScissorRect = { 0,0, mClientWidth, mClientHeight};
 	//mCommandList->RSSetScissorRects(1, &mScissorRect);
 }
  

@@ -81,9 +81,6 @@ private:
 	float mRadius = 5.0f;
 
 	POINT mLastMousePos;
-
-	float mPosChangeValue = 0.0f;
-	bool mIsGoAhead = true;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -168,44 +165,26 @@ void BoxApp::Update(const GameTimer& gt)
 	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
 	XMStoreFloat4x4(&mView, view);
 
-	if (mIsGoAhead)
-	{
-		//mPosChangeValue += 1 * gt.DeltaTime();
-
-		if (mPosChangeValue > 1.5)
-		{
-			mIsGoAhead = false;
-		}
-	}
-	else
-	{
-		//mPosChangeValue -= 1 * gt.DeltaTime();
-
-		if (mPosChangeValue < -1.5)
-		{
-			mIsGoAhead = true;
-		}
-	}
-
 	XMFLOAT4X4 tempWorld = MathHelper::Identity4x4();
-	tempWorld._41 = mPosChangeValue;
+	tempWorld._41 = -1.2f;
 
 	XMMATRIX world = XMLoadFloat4x4(&tempWorld);
 	XMMATRIX proj = XMLoadFloat4x4(&mProj);
 	XMMATRIX worldViewProj = world * view * proj;
-        
+
 	// Update the constant buffer with the latest worldViewProj matrix.
 	ObjectConstants objConstants;
 	XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
 	objConstants.Time = gt.TotalTime();
-	objConstants.pColor = XMFLOAT4(Colors::Aquamarine);
+	objConstants.pColor = XMFLOAT4(Colors::Red);
+	mObjectCB->CopyData(0, objConstants);
 
-	tempWorld._41 = -mPosChangeValue;
+	tempWorld._41 = 1.2f;
 	world = XMLoadFloat4x4(&tempWorld);
 	worldViewProj = world * view*proj;
 	XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
 
-	mObjectCB->CopyData(0, objConstants);
+	mObjectCB->CopyData(1, objConstants);
 }
 
 void BoxApp::Draw(const GameTimer& gt)
@@ -350,7 +329,7 @@ void BoxApp::BuildDescriptorHeaps()
 
 void BoxApp::BuildConstantBuffers()
 {
-	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(md3dDevice.Get(), 1, true);
+	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(md3dDevice.Get(), 2, true);
 
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
@@ -366,6 +345,20 @@ void BoxApp::BuildConstantBuffers()
 	md3dDevice->CreateConstantBufferView(
 		&cbvDesc,
 		mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+
+	cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
+
+	boxCBufIndex = 1;
+	cbAddress += boxCBufIndex * objCBByteSize;
+	cbvDesc.BufferLocation = cbAddress;
+
+	auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+	handle.Offset(boxCBufIndex, mCbvSrvUavDescriptorSize);
+
+	md3dDevice->CreateConstantBufferView(
+		&cbvDesc,
+		handle);
+
 }
 
 void BoxApp::BuildRootSignature()
@@ -434,7 +427,7 @@ void BoxApp::BuildBoxGeometry()
 		Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan) }),
 		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta) }),
 		
-		Vertex({ XMFLOAT3(0.0f, 1.5f, 0.0f), XMFLOAT4(Colors::Aquamarine) }),
+		Vertex({ XMFLOAT3(0.0f, 2.0f, 0.0f),	XMFLOAT4(Colors::Aquamarine) }),
 		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),		
 		Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::RosyBrown) }),		
 		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::ForestGreen) }),		
@@ -546,7 +539,7 @@ void BoxApp::BuildPSO()
 	//와이어 프레임 모드- 별도 지정 없을 시 기본 값은 solid
 	//psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	//삼각형 선별 방식 각각 선별 X, 전면 선별 , 별도 지정 없을 시 후면 선별
-	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	//psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	//psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
 
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
